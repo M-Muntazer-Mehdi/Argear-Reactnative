@@ -5,17 +5,27 @@ buildscript {
         compileSdkVersion = 36
         targetSdkVersion = 36
         ndkVersion = "27.1.12297006"
-        kotlinVersion = "2.1.20"
+        kotlinVersion = "1.7.10"  // Updated Kotlin version for Gradle 8.x compatibility
     }
     repositories {
         google()
         mavenCentral()
     }
     dependencies {
-        classpath("com.android.tools.build:gradle")
+        classpath("com.android.tools.build:gradle:8.0.0")  // Updated Android Gradle Plugin for Gradle 8.x
         classpath("com.facebook.react:react-native-gradle-plugin")
-        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin")
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion")  // Kotlin version
     }
 }
 
 apply plugin: "com.facebook.react.rootproject"
+
+allprojects {
+    repositories {
+        flatDir {
+            dirs 'libs'  // This line makes the 'libs' folder available for dependencies
+        }
+        google()
+        mavenCentral()
+    }
+}
