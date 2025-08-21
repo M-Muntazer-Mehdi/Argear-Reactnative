@@ -1,12 +1,6 @@
 // App.tsx
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * @format
- */
 
-import React, { useEffect, useCallback } from 'react';
+import React, { useEffect, useCallback, useState } from 'react';
 import {
   Alert,
   PermissionsAndroid,
@@ -23,69 +17,30 @@ import {
   SafeAreaProvider,
   useSafeAreaInsets,
 } from 'react-native-safe-area-context';
+import CameraButton from './src/components/CameraButton';
+import CameraComponent from './src/components/CameraComponent';  // Import the CameraComponent
 
 type ARGearBridgeType = {
   exampleMethod: (message: string) => void;
   startCameraActivity: () => void;
-  initialize?: (apiUrl: string, apiKey: string, secretKey: string, authKey: string) => void;
 };
 
 const { ARGearBridge } = NativeModules as { ARGearBridge?: ARGearBridgeType };
 
 function App() {
   const isDarkMode = useColorScheme() === 'dark';
+  const [isCameraOpen, setIsCameraOpen] = useState(false);  // State to manage camera view
 
   useEffect(() => {
-    // See what methods the native module exposes
     console.log('ARGearBridge methods:', Object.keys(ARGearBridge || {}));
-
-    // Quick smoke test (should show a Toast from native)
     ARGearBridge?.exampleMethod?.('Hello from JavaScript!');
   }, []);
 
-  return (
-    <SafeAreaProvider>
-      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
-      <AppContent />
-    </SafeAreaProvider>
-  );
-}
-
-function AppContent() {
-  const insets = useSafeAreaInsets();
-
-  const requestAndroidPermissions = useCallback(async () => {
-    if (Platform.OS !== 'android') return true;
-
-    try {
-      const result = await PermissionsAndroid.requestMultiple([
-        PermissionsAndroid.PERMISSIONS.CAMERA,
-        PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
-        // If you capture/save media on API <=32 you might also need:
-        // PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
-      ]);
-
-      const granted =
-        result[PermissionsAndroid.PERMISSIONS.CAMERA] === PermissionsAndroid.RESULTS.GRANTED &&
-        result[PermissionsAndroid.PERMISSIONS.RECORD_AUDIO] === PermissionsAndroid.RESULTS.GRANTED;
-
-      if (!granted) {
-        Alert.alert('Permissions required', 'Camera and microphone permissions are needed.');
-      }
-      return granted;
-    } catch (e) {
-      console.warn('Permission request failed:', e);
-      return false;
-    }
-  }, []);
-
-  const handleOpenCamera = useCallback(async () => {
+  const handleOpenCamera = useCallback(() => {
     if (!ARGearBridge?.startCameraActivity) {
       Alert.alert('Module not linked', 'ARGearBridge is not available.');
       return;
     }
-    const ok = await requestAndroidPermissions();
-    if (!ok) return;
 
     try {
       ARGearBridge.startCameraActivity();
@@ -93,7 +48,38 @@ function AppContent() {
       console.error('Failed to start CameraActivity:', e);
       Alert.alert('Error', 'Could not open the native camera screen.');
     }
-  }, [requestAndroidPermissions]);
+  }, []);
+
+  const handleOpenCameraComponent = useCallback(() => {
+    // This will open the CameraComponent inside the app
+    setIsCameraOpen(true);
+  }, []);
+
+  return (
+    <SafeAreaProvider>
+      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
+      <AppContent
+        handleOpenCamera={handleOpenCamera}
+        handleOpenCameraComponent={handleOpenCameraComponent}
+        isCameraOpen={isCameraOpen}  // Pass state to control camera component visibility
+        setIsCameraOpen={setIsCameraOpen}  // Set state to close camera component if needed
+      />
+    </SafeAreaProvider>
+  );
+}
+
+function AppContent({
+  handleOpenCamera,
+  handleOpenCameraComponent,
+  isCameraOpen,
+  setIsCameraOpen,
+}: {
+  handleOpenCamera: () => void;
+  handleOpenCameraComponent: () => void;
+  isCameraOpen: boolean;
+  setIsCameraOpen: (value: boolean) => void;
+}) {
+  const insets = useSafeAreaInsets();
 
   return (
     <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
@@ -103,9 +89,15 @@ function AppContent() {
         <Text style={styles.buttonText}>Test Bridge (Toast)</Text>
       </Pressable>
 
-      <Pressable style={[styles.button, styles.primary]} onPress={handleOpenCamera}>
-        <Text style={[styles.buttonText, styles.primaryText]}>Open Native CameraActivity</Text>
+      <CameraButton onPress={handleOpenCamera} />
+
+      {/* New Camera Component Button */}
+      <Pressable style={styles.button} onPress={handleOpenCameraComponent}>
+        <Text style={styles.buttonText}>Open Camera Component</Text>
       </Pressable>
+
+      {/* Show Camera Component if the state is true */}
+      {isCameraOpen && <CameraComponent />}
     </View>
   );
 }
@@ -116,7 +108,7 @@ const styles = StyleSheet.create({
     gap: 16,
     paddingHorizontal: 16,
     justifyContent: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: '#7bb6eaff',
   },
   title: {
     fontSize: 20,
@@ -140,7 +132,7 @@ const styles = StyleSheet.create({
     borderColor: '#0A84FF',
   },
   primaryText: {
-    color: '#fff',
+    color: '#6ea2ecff',
   },
 });
 
